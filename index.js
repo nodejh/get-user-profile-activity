@@ -2,8 +2,9 @@ var express = require('express');
 var superagent = require('superagent');
 var cheerio = require('cheerio');
 var nodemailer = require('nodemailer');
-var nocache = require('superagent-no-cache');
-var prefix = require('superagent-prefix')('/static');
+//var nocache = require('superagent-no-cache');
+//var request = require('request');
+//var Cache = require("ds-cache");
 
 var fs = require('fs');
 var config = require('./config.js');
@@ -13,6 +14,8 @@ var config = require('./config.js');
 var app = express();
 var iterms = [];
 var count = 0;
+
+main();
 
 function main() {
 
@@ -38,7 +41,7 @@ function main() {
             console.log('最新动态时间:');
             console.log(latest_time);
 
-            if (latest_time == prev_time) {
+            if (false) {
               // 没有更新
               // console.log(count);
               console.log('没有更新!');
@@ -106,15 +109,15 @@ function main() {
                     content += '<p><strong><a href="'+config.zhihu.user_link+'" style="color: red">'+iterms[i].name+'</a></strong> '+ // 蒋航
                       iterms[i].action+ // 赞同了
                       iterms[i].article_column + ':'+ // Continuation中的文章
-                      '<a href="'+iterms[i].article_link+'">'+iterms[i].article_title+'</a>' + // 编程语言相关的好书
+                      '<a href="'+config.zhihu.prefix+iterms[i].article_link+'">'+iterms[i].article_title+'</a>' + // 编程语言相关的好书
                       '--- '+iterms[i].time +
                       '<br>' +
                       '</p>';
                     break;
                   case '关注了问题':
-                    content += '<p><strong><a href="'+config.zhihu.user_link+'" style="color: red">'+iterms[i].name+'</a></strong> '+ // 蒋航
+                    content += '<p><strong><a href="'+config.zhihu.prefix+config.zhihu.user_link+'" style="color: red">'+iterms[i].name+'</a></strong> '+ // 蒋航
                       iterms[i].action + // 关注了问题
-                      '<a href="'+iterms[i].question_link+'">'+iterms[i].question + '</a>'+ // 大学生如何实现一个数据库
+                      '<a href="'+config.zhihu.prefix+iterms[i].question_link+'">'+iterms[i].question + '</a>'+ // 大学生如何实现一个数据库
                       '--- '+iterms[i].time +
                       '<br>' +
                       '</p>';
@@ -122,7 +125,7 @@ function main() {
                   case '赞同了回答':
                     content += '<p><strong><a href="'+config.zhihu.user_link+'" style="color: red">'+iterms[i].name+'</a></strong> '+ // 蒋航
                       iterms[i].action + // 赞同了回答
-                      '<a href="'+iterms[i].question_link+'">'+iterms[i].question + '</a>'+ // 如何学习sqlite源码
+                      '<a href="'+config.zhihu.prefix+iterms[i].question_link+'">'+iterms[i].question + '</a>'+ // 如何学习sqlite源码
                       '--- '+iterms[i].time +
                       '<br>' +
                       '---作者：' + iterms[i].answer_author + ' , '+ iterms[i].answer_author_tips + ':' +
@@ -134,7 +137,7 @@ function main() {
                   case '回答了问题':
                     content += '<p><strong><a href="'+config.zhihu.user_link+'" style="color: red">'+iterms[i].name+'</a></strong> '+ // 蒋航
                       iterms[i].action + // 赞同了回答
-                      '<a href="'+iterms[i].question_link+'">'+iterms[i].question + '</a>'+ // 如何学习sqlite源码
+                      '<a href="'+config.zhihu.prefix+iterms[i].question_link+'">'+iterms[i].question + '</a>'+ // 如何学习sqlite源码
                       '--- '+iterms[i].time +
                       // '<br>' +
                       // '---作者：' + iterms[i].answer_author + ' , '+ iterms[i].answer_author_tips +
@@ -143,11 +146,23 @@ function main() {
                       '<br>' +
                       '</p>';
                     break;
+                  case '关注了话题':
+                    content += '<p><strong><a href="'+config.zhihu.user_link+'" style="color: red">'+iterms[i].name+'</a></strong> '+ // 蒋航
+                      iterms[i].action + // 关注了话题
+                      '<a href="'+config.zhihu.prefix+iterms[i].topic_link+'">'+iterms[i].topic + '</a>'+ // 如何学习sqlite源码
+                      '--- '+iterms[i].time +
+                        // '<br>' +
+                        // '---作者：' + iterms[i].answer_author + ' , '+ iterms[i].answer_author_tips +
+                      //'<br>' +
+                      //'--- <span style="color: rgb(82, 27, 255)">共' + iterms[i].vote_count + '个赞同</span> ' + ' ' + iterms[i].answer_text +
+                      //'<br>' +
+                      '</p>';
+                    break;
                   default :
                     content = '有未知动态类型: '+ iterms[i].action +'，赶快修改程序～';
                 }
               }
-              var subject = '' + iterms[0].name + '的最新知乎动态 -- ' + iterms[0].time;
+              var subject = '' + iterms[0].name + '的最新知乎动态---' + iterms[0].time;
               transporter.sendMail({
                 from    : '<' + config.mail.user + '>',
                 to      : '<571963318@qq.com>',
@@ -172,7 +187,7 @@ function main() {
                   });
                 }
               });
-              //console.log(iterms);
+              console.log(iterms);
             }
           }
         });
@@ -181,26 +196,23 @@ function main() {
 }
 
 
-var interval = setInterval(function() {
-  //main();
-  //count ++;
-  //console.log(count);
+//var interval = setInterval(function() {
+//
+//  superagent.get(config.zhihu.user_link)
+//    // .use(nocache)
+//    .end(function (err, sres) {
+//      // 错误处理
+//      if (err) {
+//        console.log(err);
+//      } else {
+//        var $ = cheerio.load(sres.text);
+//        var latest_time = $('#zh-profile-activity-page-list .zm-profile-section-item.zm-item.clearfix').attr('data-time');
+//        console.log('最新动态时间:');
+//        console.log(latest_time);
+//      }
+//    });
 
-  superagent.get(config.zhihu.user_link)
-    .use(nocache)
-    .end(function (err, sres) {
-      // 常规的错误处理
-      if (err) {
-        console.log(err);
-      } else {
-        var $ = cheerio.load(sres.text);
-        var latest_time = $('#zh-profile-activity-page-list .zm-profile-section-item.zm-item.clearfix').attr('data-time');
-        console.log('最新动态时间:');
-        console.log(latest_time);
-      }
-    });
-
-},1000);
+//},1000);
 
 
 // 终止程序
