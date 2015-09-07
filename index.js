@@ -187,7 +187,6 @@ var interval = setInterval(function() {
   //console.log(count);
 
   superagent.get(config.zhihu.user_link)
-    .use(prefix)
     .use(nocache)
     .end(function (err, sres) {
       // 常规的错误处理
